@@ -39,11 +39,11 @@
         <div class="setup-body">
           <span class="micro-label">PASO 01 · CARGAR CATÁLOGO</span>
           <h2>Comencemos con tus productos</h2>
-          <p>Sube el archivo de Excel con la columna <strong>Producto Descripción</strong>. Detectaremos los productos y sus familias automáticamente.</p>
+          <p>Sube el archivo Excel <strong>.xls o .xlsx</strong>. Reconocemos «Producto Descripción» o las columnas «Cod. Producto», «Producto» y «Ud»; los SAP repetidos se cargan una sola vez.</p>
           <div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="Seleccionar archivo Excel">
             <span class="upload-icon" aria-hidden="true">⇧</span>
             <strong>Arrastra tu Excel aquí, o haz clic para buscar</strong>
-            <small>Archivos .xlsx · Los datos no se envían a ningún servidor</small>
+            <small>Archivos .xls y .xlsx · Los datos no se envían a ningún servidor</small>
             <span class="browse-label">Elegir archivo <span aria-hidden="true">→</span></span>
           </div>
           <p class="setup-footnote">El conteo comienza en cero y la unidad inicial siempre es piezas. Si el Excel indica KG o L, podrás elegir esa unidad al contar. “Inv. Inicial” no se suma.</p>
@@ -61,7 +61,7 @@
         <div class="work-grid">
           <section class="panel catalog-panel" aria-label="Catálogo de productos">
             <div class="panel-header"><div><p class="micro-label">PASO 02 · BUSCAR</p><h2>Catálogo de productos</h2></div><span class="count-badge" id="visible-count">0</span></div>
-            <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Buscar por descripción o código…" autocomplete="off" /><kbd>/</kbd></label>
+            <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Buscar por descripción o SAP…" autocomplete="off" /><kbd>/</kbd></label>
             <div class="filter-row">
               <label class="sr-only" for="family-filter">Filtrar por familia</label><select id="family-filter"><option value="all">Todas las familias</option></select>
               <label class="sr-only" for="status-filter">Filtrar por estado</label><select id="status-filter"><option value="all">Todos</option><option value="counted">Contados</option><option value="pending">Pendientes</option></select>
@@ -88,7 +88,7 @@
     </main>
   </div>
 
-  <input id="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+  <input id="file-input" type="file" accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
 
   <div id="export-modal" class="modal-cover" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="export-heading">
@@ -109,6 +109,7 @@
 
   <div class="toast" role="status" aria-live="polite" id="toast"></div>
   <script src="./vendor/jszip.min.js"></script>
+  <script src="./js/xls.js"></script>
   <script src="./js/excel.js"></script>
   <script src="./js/pdf.js"></script>
   <script src="./js/app.js"></script>
