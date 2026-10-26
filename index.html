@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#123e34" />
+  <meta name="description" content="Control de inventario desde Excel, conteo por producto y exportación a Excel o PDF." />
+  <title>Conteo Verde · Control de inventario</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div><span class="brand-overline">HERRAMIENTAS DE OPERACIÓN</span><strong>Conteo<span class="brand-accent">Verde</span></strong></div>
+      </div>
+      <div class="topbar-actions">
+        <span class="connection-pill"><span class="small-dot"></span> Datos en este dispositivo</span>
+        <button class="button button-subtle" id="change-file-btn" type="button" disabled> <span class="button-icon">↥</span> Cambiar Excel</button>
+      </div>
+    </header>
+
+    <main class="main-container">
+      <section class="intro">
+        <div>
+          <p class="eyebrow"><span class="eyebrow-line"></span> INVENTARIOS / CONTROL DE EXISTENCIAS</p>
+          <h1>Tu inventario, <em>bajo control.</em></h1>
+          <p class="intro-description">Busca cada producto, suma tus conteos y genera el reporte final en segundos.</p>
+        </div>
+        <div class="intro-actions" id="hero-actions" hidden>
+          <div id="session-tag" class="session-tag"></div>
+          <button id="finalize-btn" type="button" class="button button-primary"><span aria-hidden="true">▣</span> Finalizar inventario <span aria-hidden="true">↗</span></button>
+        </div>
+      </section>
+
+      <section class="setup-card" id="setup-section">
+        <div class="setup-illustration" aria-hidden="true"><span>XL</span></div>
+        <div class="setup-body">
+          <span class="micro-label">PASO 01 · CARGAR CATÁLOGO</span>
+          <h2>Comencemos con tus productos</h2>
+          <p>Sube el archivo de Excel con la columna <strong>Producto Descripción</strong>. Detectaremos los productos y sus familias automáticamente.</p>
+          <div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="Seleccionar archivo Excel">
+            <span class="upload-icon" aria-hidden="true">⇧</span>
+            <strong>Arrastra tu Excel aquí, o haz clic para buscar</strong>
+            <small>Archivos .xlsx · Los datos no se envían a ningún servidor</small>
+            <span class="browse-label">Elegir archivo <span aria-hidden="true">→</span></span>
+          </div>
+          <p class="setup-footnote">El conteo comienza en cero. La columna “Inv. Inicial”, si existe, no se suma al inventario contado.</p>
+        </div>
+      </section>
+
+      <section id="workspace" hidden>
+        <div class="summary-grid" aria-label="Resumen del inventario">
+          <article class="stat-card"><div class="stat-header"><span>Productos cargados</span><span class="stat-icon">▦</span></div><div class="stat-value" id="stat-total">0</div><div class="stat-detail">En el catálogo</div></article>
+          <article class="stat-card"><div class="stat-header"><span>Con conteo</span><span class="stat-icon">✓</span></div><div class="stat-value" id="stat-counted">0</div><div class="stat-detail">Productos registrados</div></article>
+          <article class="stat-card"><div class="stat-header"><span>Pendientes</span><span class="stat-icon">⌕</span></div><div class="stat-value" id="stat-pending">0</div><div class="stat-detail">Sin unidades contadas</div></article>
+          <article class="stat-card stat-progress"><div class="stat-header"><span>Avance de conteo</span><span class="stat-icon">◉</span></div><div class="stat-value" id="stat-progress">0%</div><div class="progress-track"><span id="progress-fill"></span></div></article>
+        </div>
+
+        <div class="work-grid">
+          <section class="panel catalog-panel" aria-label="Catálogo de productos">
+            <div class="panel-header"><div><p class="micro-label">PASO 02 · BUSCAR</p><h2>Catálogo de productos</h2></div><span class="count-badge" id="visible-count">0</span></div>
+            <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Buscar por descripción o código…" autocomplete="off" /><kbd>/</kbd></label>
+            <div class="filter-row">
+              <label class="sr-only" for="family-filter">Filtrar por familia</label><select id="family-filter"><option value="all">Todas las familias</option></select>
+              <label class="sr-only" for="status-filter">Filtrar por estado</label><select id="status-filter"><option value="all">Todos</option><option value="counted">Contados</option><option value="pending">Pendientes</option></select>
+            </div>
+            <div class="list-heading"><span>PRODUCTO</span><span>CONTEO</span></div>
+            <div id="product-list" class="product-list" role="listbox" aria-label="Seleccionar producto"></div>
+            <div class="list-bottom"><span>Selecciona un producto para registrar sus cantidades.</span><span id="list-range"></span></div>
+          </section>
+
+          <section class="panel detail-panel" aria-label="Registro de cantidades">
+            <div class="detail-top"><p class="micro-label">PASO 03 · CONTABILIZAR</p><span id="detail-status" class="status-pill">Sin conteo</span></div>
+            <div class="detail-content" id="detail-content">
+              <div class="empty-detail"><div class="empty-detail-icon">▧</div><h2>Selecciona un producto</h2><p>Usa el buscador de la izquierda para comenzar a contar.</p></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="recent-panel panel" aria-label="Actividad reciente">
+          <div class="recent-title"><div><p class="micro-label">SEGUIMIENTO EN TIEMPO REAL</p><h2>Últimos movimientos</h2></div><button class="button button-link" id="reset-btn" type="button">Reiniciar conteo <span aria-hidden="true">↻</span></button></div>
+          <div id="recent-content" class="recent-content"><p class="empty-note">Los movimientos que registres aparecerán aquí.</p></div>
+        </section>
+        <footer class="site-footer"><p>ConteoVerde · Inventario de tienda</p><p>Guardado automático en este navegador · Sin cuentas ni servidores</p></footer>
+      </section>
+    </main>
+  </div>
+
+  <input id="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+
+  <div id="export-modal" class="modal-cover" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="export-heading">
+      <div class="modal-head"><div class="modal-seal">▣</div><button type="button" class="icon-button" id="close-modal" aria-label="Cerrar ventana">✕</button></div>
+      <p class="micro-label">PASO 04 · DESCARGAR REPORTE</p><h2 id="export-heading">Finalizar inventario</h2>
+      <p class="modal-desc">Elige el formato para generar un reporte con el nombre de cada producto y su cantidad total contada.</p>
+      <div class="modal-summary"><span>Productos con conteo</span><strong id="export-quantity">0</strong><span>Total del catálogo</span><strong id="export-total">0</strong></div>
+      <div class="field-heading">FORMATO DE DESCARGA</div>
+      <div class="format-options" role="radiogroup" aria-label="Formato de reporte">
+        <label class="format-option"><input type="radio" name="export-format" value="xlsx" checked /><span class="file-icon file-excel">X</span><span><strong>Excel</strong><small>Editable · .xlsx</small></span><span class="radio-indicator"></span></label>
+        <label class="format-option"><input type="radio" name="export-format" value="pdf" /><span class="file-icon file-pdf">P</span><span><strong>PDF</strong><small>Listo para imprimir · .pdf</small></span><span class="radio-indicator"></span></label>
+      </div>
+      <label class="check-row"><input type="checkbox" id="include-zero" checked /><span>Incluir productos sin conteo (cantidad 0)</span></label>
+      <p class="export-hint">Al generar el reporte, el inventario quedará marcado como finalizado. Podrás reabrirlo para hacer correcciones.</p>
+      <button type="button" id="download-btn" class="button button-primary button-wide">Generar y descargar reporte <span aria-hidden="true">↓</span></button>
+    </div>
+  </div>
+
+  <div class="toast" role="status" aria-live="polite" id="toast"></div>
+  <script src="./vendor/jszip.min.js"></script>
+  <script src="./js/excel.js"></script>
+  <script src="./js/pdf.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
