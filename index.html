@@ -26,7 +26,7 @@
         <div>
           <p class="eyebrow"><span class="eyebrow-line"></span> INVENTARIOS / CONTROL DE EXISTENCIAS</p>
           <h1>Tu inventario, <em>bajo control.</em></h1>
-          <p class="intro-description">Busca cada producto, suma tus conteos y genera el reporte final en segundos.</p>
+          <p class="intro-description">Cuenta en piezas por defecto o en la unidad indicada en el Excel y descarga el reporte final.</p>
         </div>
         <div class="intro-actions" id="hero-actions" hidden>
           <div id="session-tag" class="session-tag"></div>
@@ -46,7 +46,7 @@
             <small>Archivos .xlsx · Los datos no se envían a ningún servidor</small>
             <span class="browse-label">Elegir archivo <span aria-hidden="true">→</span></span>
           </div>
-          <p class="setup-footnote">El conteo comienza en cero. La columna “Inv. Inicial”, si existe, no se suma al inventario contado.</p>
+          <p class="setup-footnote">El conteo comienza en cero y la unidad inicial siempre es piezas. Si el Excel indica KG o L, podrás elegir esa unidad al contar. “Inv. Inicial” no se suma.</p>
         </div>
       </section>
 
@@ -94,7 +94,7 @@
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="export-heading">
       <div class="modal-head"><div class="modal-seal">▣</div><button type="button" class="icon-button" id="close-modal" aria-label="Cerrar ventana">✕</button></div>
       <p class="micro-label">PASO 04 · DESCARGAR REPORTE</p><h2 id="export-heading">Finalizar inventario</h2>
-      <p class="modal-desc">Elige el formato para generar un reporte con el nombre de cada producto y su cantidad total contada.</p>
+      <p class="modal-desc">Elige el formato de tu reporte. Las piezas y las cantidades medidas en KG o L aparecerán por separado, sin conversiones.</p>
       <div class="modal-summary"><span>Productos con conteo</span><strong id="export-quantity">0</strong><span>Total del catálogo</span><strong id="export-total">0</strong></div>
       <div class="field-heading">FORMATO DE DESCARGA</div>
       <div class="format-options" role="radiogroup" aria-label="Formato de reporte">

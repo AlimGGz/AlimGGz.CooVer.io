@@ -104,7 +104,7 @@
         const unitMatch = afterCode.match(/\s+-\s+([A-Za-zÁÉÍÓÚÑáéíóúñ0-9.]{1,10})\s*$/);
         const unit = unitMatch ? unitMatch[1] : '';
         const name = unitMatch ? afterCode.slice(0, -unitMatch[0].length).trim() : afterCode.trim();
-        products.push({ id: `p${products.length + 1}`, family: String(familyCol >= 0 ? r[familyCol] ?? '' : '').trim() || 'Sin familia', description, code, name, unit, totalMilli: 0, history: [] });
+        products.push({ id: `p${products.length + 1}`, family: String(familyCol >= 0 ? r[familyCol] ?? '' : '').trim() || 'Sin familia', description, code, name, unit, totalsMilli: {piece: 0, source: 0}, history: [] });
       }
       if (products.length) return { products, worksheet: sheet.name, filename: file.name };
     }
@@ -121,23 +121,24 @@
 
   async function exportExcel(products, info) {
     const data = products;
-    const withCount = data.filter(p => p.totalMilli > 0).length;
+    const withCount = data.filter(p => (p.totalsMilli?.piece || 0) > 0 || (p.totalsMilli?.source || 0) > 0).length;
     const createdAt = new Date();
     const cells = [];
     cells.push(row(1, [cell('REPORTE FINAL DE INVENTARIO', 0, 1, 2)], 33));
     cells.push(row(2, [cell(`Generado: ${createdAt.toLocaleString('es-MX')}  ·  Archivo: ${info.filename}`, 0, 2, 3)], 24));
     cells.push(row(4, [cell('PRODUCTOS EN REPORTE', 0, 4, 4), cell(data.length, 1, 4, 5, true), cell('CON CONTEO', 2, 4, 4), cell(withCount, 3, 4, 5, true)], 23));
-    cells.push(row(6, [cell('Las cantidades corresponden al conteo realizado en esta aplicación, no al inventario inicial.', 0, 6, 3)], 23));
-    const headers = ['Familia', 'Código', 'Producto Descripción', 'Unidad', 'Cantidad total contada', 'Registros'];
+    cells.push(row(6, [cell('Piezas y unidad del Excel se cuentan por separado (sin conversión). El inventario inicial no se suma.', 0, 6, 3)], 23));
+    const headers = ['Familia', 'Código', 'Producto Descripción', 'Unidad del Excel', 'Total piezas', 'Total en unidad del Excel', 'Registros'];
     cells.push(row(7, headers.map((h, i) => cell(h, i, 7, 1)), 29));
     data.forEach((p, i) => {
       const r = i + 8;
       const normalStyle = i % 2 ? 7 : 0;
       const numericStyle = i % 2 ? 8 : 6;
-      cells.push(row(r, [cell(p.family, 0, r, normalStyle), cell(p.code, 1, r, normalStyle), cell(p.description, 2, r, normalStyle), cell(p.unit, 3, r, normalStyle), cell(p.totalMilli / 1000, 4, r, numericStyle, true), cell(p.history.length, 5, r, i % 2 ? 8 : 5, true)], 23));
+      const other = !/^(pza|pzas|pz|pieza|piezas|und|un|unidad|unidades)$/i.test(String(p.unit || '').trim()) && Boolean(p.unit);
+      cells.push(row(r, [cell(p.family, 0, r, normalStyle), cell(p.code, 1, r, normalStyle), cell(p.description, 2, r, normalStyle), cell(p.unit || '—', 3, r, normalStyle), cell((p.totalsMilli?.piece || 0) / 1000, 4, r, numericStyle, true), other ? cell((p.totalsMilli?.source || 0) / 1000, 5, r, numericStyle, true) : cell('—', 5, r, normalStyle), cell(p.history.length, 6, r, i % 2 ? 8 : 5, true)], 23));
     });
     const lastRow = 7 + data.length;
-    const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="${MAIN_NS}"><dimension ref="A1:F${Math.max(7,lastRow)}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="7" topLeftCell="A8" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="19"/><cols><col min="1" max="1" width="25" customWidth="1"/><col min="2" max="2" width="17" customWidth="1"/><col min="3" max="3" width="71" customWidth="1"/><col min="4" max="4" width="13" customWidth="1"/><col min="5" max="5" width="25" customWidth="1"/><col min="6" max="6" width="13" customWidth="1"/></cols><sheetData>${cells.join('')}</sheetData><mergeCells count="3"><mergeCell ref="A1:F1"/><mergeCell ref="A2:F2"/><mergeCell ref="A6:F6"/></mergeCells><autoFilter ref="A7:F${Math.max(lastRow,7)}"/><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="landscape" paperSize="9" fitToHeight="0" fitToWidth="1"/></worksheet>`;
+    const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="${MAIN_NS}"><dimension ref="A1:G${Math.max(7,lastRow)}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="7" topLeftCell="A8" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="19"/><cols><col min="1" max="1" width="25" customWidth="1"/><col min="2" max="2" width="17" customWidth="1"/><col min="3" max="3" width="71" customWidth="1"/><col min="4" max="4" width="18" customWidth="1"/><col min="5" max="5" width="19" customWidth="1"/><col min="6" max="6" width="29" customWidth="1"/><col min="7" max="7" width="13" customWidth="1"/></cols><sheetData>${cells.join('')}</sheetData><mergeCells count="3"><mergeCell ref="A1:G1"/><mergeCell ref="A2:G2"/><mergeCell ref="A6:G6"/></mergeCells><autoFilter ref="A7:G${Math.max(lastRow,7)}"/><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="landscape" paperSize="9" fitToHeight="0" fitToWidth="1"/></worksheet>`;
     const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="${MAIN_NS}"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.###"/></numFmts><fonts count="4"><font><sz val="10"/><name val="Aptos"/><color rgb="FF273D34"/></font><font><b/><sz val="10"/><name val="Aptos"/><color rgb="FFFFFFFF"/></font><font><b/><sz val="19"/><name val="Aptos Display"/><color rgb="FF123E34"/></font><font><sz val="10"/><name val="Aptos"/><color rgb="FF7C8980"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF123E34"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF1F8F3"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="9"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFill="1" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="3" fillId="3" borderId="0" xfId="0" applyFill="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="3" borderId="0" xfId="0" applyNumberFormat="1" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
     const zip = new JSZip();
     zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="${contentTypes}"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`);

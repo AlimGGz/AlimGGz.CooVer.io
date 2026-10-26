@@ -8,6 +8,33 @@
   const normalize = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-MX');
   const dateShort = iso => new Date(iso).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   let state = null, selectedId = null, toastTimer = null, isImporting = false;
+  let selectedUnitKey = 'piece'; // Siempre iniciar el registro de cada artículo en piezas.
+  const pieceLike = unit => /^(pza|pzas|pz|pieza|piezas|und|un|unidad|unidades)$/.test(normalize(unit).trim());
+  const hasOtherUnit = p => Boolean(p.unit && !pieceLike(p.unit));
+  const unitText = (p, key) => key === 'source' && hasOtherUnit(p) ? p.unit : 'pzas';
+  const totalFor = (p, key) => Number(p.totalsMilli?.[key]) || 0;
+  const hasCount = p => totalFor(p, 'piece') > 0 || totalFor(p, 'source') > 0;
+  const countText = p => {
+    const pieces = `${quantity(totalFor(p, 'piece'))} pzas`;
+    return hasOtherUnit(p) ? `${pieces} · ${quantity(totalFor(p, 'source'))} ${p.unit}` : pieces;
+  };
+  function migrateProduct(p) {
+    const oldTotal = Number.isSafeInteger(p.totalMilli) ? Math.max(0, p.totalMilli) : 0;
+    const legacyUnitKey = hasOtherUnit(p) ? 'source' : 'piece';
+    if (!p.totalsMilli || typeof p.totalsMilli !== 'object') {
+      p.totalsMilli = { piece: legacyUnitKey === 'piece' ? oldTotal : 0, source: legacyUnitKey === 'source' ? oldTotal : 0 };
+    }
+    for (const key of ['piece', 'source']) {
+      if (!Number.isSafeInteger(p.totalsMilli[key]) || p.totalsMilli[key] < 0) p.totalsMilli[key] = 0;
+    }
+    if (!hasOtherUnit(p) && p.totalsMilli.source > 0) {
+      p.totalsMilli.piece += p.totalsMilli.source;
+      p.totalsMilli.source = 0;
+    }
+    if (!Array.isArray(p.history)) p.history = [];
+    for (const h of p.history) if (!h.unitKey) h.unitKey = legacyUnitKey;
+    delete p.totalMilli;
+  }
 
   function toast(message, error = false) {
     const node = $('toast'); node.textContent = message;
@@ -23,18 +50,23 @@
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if (saved && Array.isArray(saved.products) && saved.products.length > 0 && Array.isArray(saved.actions)) {
-        // Normalize totals to integer thousandths for older / incomplete records.
-        for (const p of saved.products) {
-          p.totalMilli = Number.isSafeInteger(p.totalMilli) ? p.totalMilli : 0;
-          if (!Array.isArray(p.history)) p.history = [];
+        // Los conteos de versiones anteriores se conservan en su unidad original.
+        // Ejemplo: un registro anterior de 1.5 KG NO se transforma en 1.5 piezas.
+        for (const p of saved.products) migrateProduct(p);
+        for (const a of saved.actions) {
+          if (!a.unitKey) {
+            const p = saved.products.find(product => product.id === a.productId);
+            a.unitKey = p && hasOtherUnit(p) ? 'source' : 'piece';
+          }
         }
+        saved.schemaVersion = 2;
         state = saved;
         selectedId = saved.selectedId || saved.products[0].id;
       }
     } catch { try { localStorage.removeItem(STORAGE_KEY); } catch { /* El almacenamiento local puede estar bloqueado. */ } }
   }
   function counts() {
-    const counted = state.products.filter(p => p.totalMilli > 0).length;
+    const counted = state.products.filter(hasCount).length;
     return { counted, pending: state.products.length - counted, percent: Math.round(counted / state.products.length * 100) };
   }
   function productById(id) { return state?.products.find(p => p.id === id); }
@@ -44,8 +76,8 @@
     const family = $('family-filter').value, status = $('status-filter').value;
     return state.products.filter(p => {
       if (family !== 'all' && p.family !== family) return false;
-      if (status === 'counted' && p.totalMilli <= 0) return false;
-      if (status === 'pending' && p.totalMilli > 0) return false;
+      if (status === 'counted' && !hasCount(p)) return false;
+      if (status === 'pending' && hasCount(p)) return false;
       return !text || normalize(`${p.description} ${p.family} ${p.code}`).includes(text);
     });
   }
@@ -73,9 +105,9 @@
       const code = document.createElement('div'); code.className = 'product-item-code'; code.textContent = p.code ? `SKU ${p.code}` : 'PRODUCTO';
       const name = document.createElement('div'); name.className = 'product-item-name'; name.textContent = p.name || p.description;
       const family = document.createElement('div'); family.className = 'product-item-family'; family.textContent = p.family;
-      const qty = document.createElement('span'); qty.className = 'product-item-qty' + (p.totalMilli > 0 ? ' positive' : ''); qty.textContent = quantity(p.totalMilli);
+      const qty = document.createElement('span'); qty.className = 'product-item-qty' + (hasCount(p) ? ' positive' : ''); qty.textContent = countText(p);
       left.append(code, name, family); item.append(left, qty);
-      item.addEventListener('click', () => { selectedId = p.id; state.selectedId = selectedId; save(); renderList(); renderDetail(); });
+      item.addEventListener('click', () => { selectedId = p.id; selectedUnitKey = 'piece'; state.selectedId = selectedId; save(); renderList(); renderDetail(); });
       fragment.append(item);
     }
     if (!matches.length) {
@@ -88,26 +120,39 @@
     const p = productById(selectedId);
     if (!p) { $('detail-content').innerHTML = '<div class="empty-detail"><h2>Selecciona un producto</h2></div>'; return; }
     const closed = Boolean(state.completedAt);
-    $('detail-status').textContent = closed ? 'Finalizado' : (p.totalMilli > 0 ? '✓ Con conteo' : 'Sin conteo');
-    $('detail-status').className = 'status-pill' + (closed ? ' closed' : (p.totalMilli > 0 ? ' done' : ''));
+    const other = hasOtherUnit(p);
+    const unitKey = other && selectedUnitKey === 'source' ? 'source' : 'piece';
+    $('detail-status').textContent = closed ? 'Finalizado' : (hasCount(p) ? '✓ Con conteo' : 'Sin conteo');
+    $('detail-status').className = 'status-pill' + (closed ? ' closed' : (hasCount(p) ? ' done' : ''));
     const history = [...p.history].reverse().slice(0, 5);
+    const totals = other ? `
+      <div class="total-split">
+        <div class="total-part"><span>PIEZAS CONTADAS</span><div class="total-display">${quantity(totalFor(p, 'piece'))}</div><div class="total-unit">PZAS</div></div>
+        <div class="total-part"><span>UNIDAD DEL EXCEL</span><div class="total-display">${quantity(totalFor(p, 'source'))}</div><div class="total-unit">${safe(p.unit)}</div></div>
+      </div>` : `<div class="total-display">${quantity(totalFor(p, 'piece'))}</div><div class="total-unit">PZAS</div>`;
+    const unitSelect = other ? `
+      <div class="unit-picker"><label for="count-unit">UNIDAD PARA ESTE CONTEO</label>
+      <select id="count-unit" aria-label="Unidad para registrar la cantidad"><option value="piece" ${unitKey === 'piece' ? 'selected' : ''}>Piezas (predeterminado)</option><option value="source" ${unitKey === 'source' ? 'selected' : ''}>${safe(p.unit)} (unidad del Excel)</option></select></div>
+      <p class="unit-explanation">Las piezas y los ${safe(p.unit)} se acumulan por separado. No se realiza ninguna conversión automática.</p>` : `
+      <div class="unit-picker"><span class="unit-picker-label">UNIDAD PARA ESTE CONTEO</span><div class="fixed-unit">Piezas (predeterminado)</div></div>`;
     $('detail-content').innerHTML = `
       <div class="detail-product">
         <h2 class="detail-name">${safe(p.name || p.description)}</h2>
-        <div class="detail-meta"><span class="meta-tag">${p.code ? 'SKU ' + safe(p.code) : 'Sin código'}</span><span class="meta-tag">${safe(p.family)}</span><span class="meta-tag">${safe(p.unit || 'Unidad no indicada')}</span></div>
+        <div class="detail-meta"><span class="meta-tag">${p.code ? 'SKU ' + safe(p.code) : 'Sin código'}</span><span class="meta-tag">${safe(p.family)}</span><span class="meta-tag">Unidad en Excel: ${safe(p.unit || 'No indicada')}</span></div>
       </div>
-      <div class="total-card"><span>TOTAL CONTADO</span><div class="total-display">${quantity(p.totalMilli)}</div><div class="total-unit">${safe(p.unit || 'UNIDADES')}</div></div>
+      <div class="total-card"><span>TOTAL CONTADO POR UNIDAD</span>${totals}</div>
       ${closed ? `<div class="closed-note">Este inventario está finalizado. Puedes descargar el reporte o reabrirlo para corregir algún conteo.</div><button class="button button-outline reopen-button" id="reopen-btn" type="button">Reabrir inventario</button>` : `
-      <div class="add-section"><div class="field-heading">AGREGAR CANTIDAD CONTADA</div><div class="amount-row"><input class="amount-input" type="text" inputmode="decimal" autocomplete="off" id="amount-input" placeholder="Ej. 1.5" aria-label="Cantidad que deseas sumar"/><button class="button button-primary" type="button" id="add-button">+ Sumar cantidad</button></div>
-      <div class="quick-buttons"><button type="button" data-quick="0.5">+ 0.5</button><button type="button" data-quick="1">+ 1</button><button type="button" data-quick="5">+ 5</button></div></div>`}
+      <div class="add-section">${unitSelect}<div class="field-heading">AGREGAR CANTIDAD EN ${safe(unitText(p, unitKey).toUpperCase())}</div><div class="amount-row"><input class="amount-input" type="text" inputmode="decimal" autocomplete="off" id="amount-input" placeholder="${unitKey === 'piece' ? 'Ej. 2' : 'Ej. 1.5'}" aria-label="Cantidad que deseas sumar en ${safe(unitText(p,unitKey))}"/><button class="button button-primary" type="button" id="add-button">+ Sumar cantidad</button></div>
+      <div class="quick-buttons">${(unitKey === 'piece' ? ['1','5','10'] : ['0.5','1','5']).map(value => `<button type="button" data-quick="${value}">+ ${value} ${safe(unitText(p,unitKey))}</button>`).join('')}</div></div>`}
       <div class="history-head"><strong>Historial del producto</strong><button type="button" class="text-button" id="undo-button" ${closed || !p.history.length ? 'disabled' : ''}>↶ Deshacer último</button></div>
-      <div class="history-list">${history.length ? history.map(h => `<div class="history-entry"><span>${safe(dateShort(h.at))}</span><strong>+ ${quantity(h.milli)} ${safe(p.unit)}</strong></div>`).join('') : '<p class="empty-note">Todavía no hay conteos de este producto.</p>'}</div>`;
+      <div class="history-list">${history.length ? history.map(h => `<div class="history-entry"><span>${safe(dateShort(h.at))}</span><strong>+ ${quantity(h.milli)} ${safe(unitText(p,h.unitKey))}</strong></div>`).join('') : '<p class="empty-note">Todavía no hay conteos de este producto.</p>'}</div>`;
     if (closed) $('reopen-btn').addEventListener('click', () => {
       if (confirm('¿Quieres reabrir el inventario para continuar editando los conteos?')) {
         state.completedAt = null; save(); render(); toast('Inventario reabierto. Ya puedes continuar contando.');
       }
     });
     else {
+      $('count-unit')?.addEventListener('change', event => { selectedUnitKey = event.target.value; renderDetail(); $('amount-input')?.focus(); });
       $('amount-input').addEventListener('keydown', event => { if (event.key === 'Enter') addTypedAmount(); });
       $('add-button').addEventListener('click', addTypedAmount);
       document.querySelectorAll('[data-quick]').forEach(btn => btn.addEventListener('click', () => addAmount(btn.dataset.quick)));
@@ -126,22 +171,25 @@
     const milli = parseAmount(amount);
     if (milli === null) { toast('Escribe una cantidad positiva, con máximo tres decimales (ej. 2.5).', true); $('amount-input')?.focus(); return; }
     const p = productById(selectedId);
-    if (!p || !Number.isSafeInteger(p.totalMilli + milli)) { toast('Cantidad demasiado grande.', true); return; }
+    if (!p) return;
+    const unitKey = hasOtherUnit(p) && selectedUnitKey === 'source' ? 'source' : 'piece';
+    if (!Number.isSafeInteger(totalFor(p, unitKey) + milli)) { toast('Cantidad demasiado grande.', true); return; }
     const id = `a-${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
     const at = new Date().toISOString();
-    p.totalMilli += milli;
-    p.history.push({ id, milli, at });
-    state.actions.push({ id, productId: p.id, milli, at });
-    save(); render(); toast(`Se sumaron ${quantity(milli)} a ${p.code || p.name}.`);
+    p.totalsMilli[unitKey] += milli;
+    p.history.push({ id, milli, at, unitKey });
+    state.actions.push({ id, productId: p.id, milli, at, unitKey });
+    save(); render(); toast(`Se sumaron ${quantity(milli)} ${unitText(p,unitKey)} a ${p.code || p.name}.`);
   }
   function undoLast() {
     if (!state || state.completedAt) return;
     const p = productById(selectedId);
     if (!p || !p.history.length) return;
     const change = p.history.pop();
-    p.totalMilli = Math.max(0,p.totalMilli - change.milli);
+    const unitKey = change.unitKey === 'source' && hasOtherUnit(p) ? 'source' : 'piece';
+    p.totalsMilli[unitKey] = Math.max(0, p.totalsMilli[unitKey] - change.milli);
     state.actions = state.actions.filter(a => a.id !== change.id);
-    save(); render(); toast('Se deshizo el último conteo de este producto.');
+    save(); render(); toast(`Se deshizo el último conteo (${unitText(p,unitKey)}).`);
   }
   function renderRecent() {
     const rows = [...state.actions].reverse().slice(0,5);
@@ -149,7 +197,7 @@
     $('recent-content').innerHTML = rows.map(a => {
       const p = productById(a.productId);
       if (!p) return '';
-      return `<div class="recent-row"><div><strong>${safe(p.name || p.description)}</strong><small>${safe(p.code)} · ${safe(p.family)}</small></div><span class="recent-qty">+ ${quantity(a.milli)} ${safe(p.unit)}</span><time class="recent-time">${safe(dateShort(a.at))}</time></div>`;
+      return `<div class="recent-row"><div><strong>${safe(p.name || p.description)}</strong><small>${safe(p.code)} · ${safe(p.family)}</small></div><span class="recent-qty">+ ${quantity(a.milli)} ${safe(unitText(p,a.unitKey))}</span><time class="recent-time">${safe(dateShort(a.at))}</time></div>`;
     }).join('');
   }
   function render() {
@@ -158,7 +206,7 @@
     $('hero-actions').hidden = !state;
     $('change-file-btn').disabled = !state;
     if (!state) return;
-    if (!productById(selectedId)) selectedId = state.products[0]?.id;
+    if (!productById(selectedId)) { selectedId = state.products[0]?.id; selectedUnitKey = 'piece'; }
     renderStats(); renderList(); renderDetail(); renderRecent();
   }
   async function importFile(file) {
@@ -168,8 +216,8 @@
     try {
       const imported = await InventoryExcel.readExcel(file);
       if (state && !confirm(`Ya hay un inventario cargado (${state.products.length} productos). Si importas otro Excel, se reemplazará y se perderán los conteos actuales de este navegador. ¿Continuar?`)) return;
-      state = { filename: imported.filename, worksheet: imported.worksheet, importedAt: new Date().toISOString(), completedAt: null, products: imported.products, actions: [], selectedId: imported.products[0].id };
-      selectedId = state.selectedId;
+      state = { schemaVersion: 2, filename: imported.filename, worksheet: imported.worksheet, importedAt: new Date().toISOString(), completedAt: null, products: imported.products, actions: [], selectedId: imported.products[0].id };
+      selectedId = state.selectedId; selectedUnitKey = 'piece';
       $('search-input').value = ''; $('status-filter').value = 'all';
       const familyOptions = [...new Set(state.products.map(p => p.family))].sort((a,b) => a.localeCompare(b,'es-MX'));
       setFamilyOptions(familyOptions);
@@ -198,7 +246,7 @@
     if (!state) return;
     const btn = $('download-btn');
     const format = document.querySelector('input[name="export-format"]:checked').value;
-    const data = $('include-zero').checked ? state.products : state.products.filter(p => p.totalMilli > 0);
+    const data = $('include-zero').checked ? state.products : state.products.filter(hasCount);
     if (!data.length && !$('include-zero').checked) { toast('No hay productos contabilizados. Activa «Incluir productos sin conteo».', true); return; }
     btn.disabled = true; btn.textContent = 'Generando reporte…';
     try {
@@ -215,7 +263,7 @@
   function resetCounts() {
     if (!state) return;
     if (!confirm('¿Reiniciar todos los conteos? Esto pondrá los totales en cero y borrará el historial. Esta acción no se puede deshacer.')) return;
-    for (const p of state.products) { p.totalMilli = 0; p.history = []; }
+    for (const p of state.products) { p.totalsMilli = {piece:0,source:0}; p.history = []; }
     state.actions = []; state.completedAt = null;
     save(); render(); toast('Se reiniciaron los conteos de todos los productos.');
   }
@@ -228,7 +276,7 @@
     for (const event of ['dragleave','drop']) $('drop-zone').addEventListener(event, e => { e.preventDefault(); $('drop-zone').classList.remove('drag-over'); });
     $('drop-zone').addEventListener('drop', e => importFile(e.dataTransfer?.files?.[0]));
     $('search-input').addEventListener('input', renderList);
-    $('search-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){const first=getFiltered()[0];if(first){selectedId=first.id;state.selectedId=selectedId;save();renderList();renderDetail();$('amount-input')?.focus();}} });
+    $('search-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){const first=getFiltered()[0];if(first){selectedId=first.id;selectedUnitKey='piece';state.selectedId=selectedId;save();renderList();renderDetail();$('amount-input')?.focus();}} });
     $('family-filter').addEventListener('change', renderList);
     $('status-filter').addEventListener('change', renderList);
     $('finalize-btn').addEventListener('click', openExport);

@@ -8,6 +8,9 @@ Aplicación estática para cargar un catálogo `.xlsx`, buscar por **Producto De
 - Compatible con la estructura de `lista.xlsx`: **Familia | Producto Descripción | Inv. Inicial**.
 - **Inv. Inicial no se suma**: todos los productos comienzan con total contado de **0**.
 - Busca por texto, código de producto o familia; filtra por productos contados y pendientes.
+- **Nueva selección de unidades**: todos los productos comienzan en **Piezas**, incluso si el Excel especifica KG o L. En los productos con una unidad diferente puedes escoger esa unidad al contar.
+- **Sin conversiones inventadas**: los conteos en piezas y los conteos en KG/L se acumulan **por separado**, con sus totales e historial por unidad y columnas distintas en Excel/PDF. Las unidades PZA y UND del catálogo se consideran piezas.
+- **Compatibilidad con avances previos**: si ya había conteos en el navegador, se migran conservando su unidad original (sin convertir KG/L en piezas).
 - Registra cantidades de hasta **tres decimales** (útil para KG y L). Botones rápidos **+0.5**, **+1**, **+5**.
 - Histórico de los registros con botón **Deshacer último** en cada producto.
 - **Guardado automático en el navegador** mediante `localStorage` (no sincroniza entre dispositivos).
@@ -31,9 +34,9 @@ La aplicación también funciona abriendo `index.html` directamente en Chrome, E
 
 1. **Subir Excel** y esperar a que se reconozca el catálogo.
 2. **Buscar** por descripción, código o familia y seleccionar el artículo.
-3. **Sumar cantidades** con el campo de texto o los botones rápidos. Por ejemplo, agregar 2.5 y luego 1.2 deja el total en 3.7.
+3. **Contar en piezas por defecto**. Si el producto indica otra unidad en el Excel (por ejemplo KG o L), también puedes seleccionarla antes de sumar. Ejemplo: 2 piezas y 1.5 KG quedan registrados en dos totales distintos; no se suman entre sí.
 4. Corregir con **Deshacer último**, si lo necesitas.
-5. Pulsar **Finalizar inventario**, seleccionar **Excel o PDF** y descargar.
+5. Pulsar **Finalizar inventario**, seleccionar **Excel o PDF** y descargar. Ambos reportes distinguen total de piezas y total en la unidad indicada en el Excel.
 
 **Importante:** El archivo de inventario no viene precargado. La lista de productos del usuario se importa desde la interfaz; los conteos quedan almacenados únicamente en el navegador y dispositivo usados. Borrar los datos del navegador, usar modo incógnito o cambiar de dispositivo puede borrar o separar el avance; descarga reportes periódicamente para respaldarte. Importar otro catálogo reemplaza la sesión actual (previa confirmación).
 

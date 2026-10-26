@@ -49,23 +49,24 @@
     s+=text(LEFT+16,18,'REPORTE FINAL DE INVENTARIO',18,true,'#ffffff');
     s+=text(LEFT+17,46,`Generado: ${new Date().toLocaleString('es-MX')}   ·   Origen: ${fit(info.filename,240,9)}`,8.7,false,'#d4e7dd');
     s+=text(LEFT,102,`Productos incluidos: ${products.length}`,9.3,true,'#123e34');
-    s+=text(LEFT+169,102,`Con conteo: ${products.filter(p=>p.totalMilli>0).length}`,9.3,true,'#123e34');
+    s+=text(LEFT+169,102,`Con conteo: ${products.filter(p=>(p.totalsMilli?.piece || 0)>0 || (p.totalsMilli?.source || 0)>0).length}`,9.3,true,'#123e34');
     s+=text(WIDTH-RIGHT-125,103,`Página ${pageNum} de ${totalPages}`,8.6,false,'#718279');
     s+=rect(LEFT,126,WIDTH-LEFT-RIGHT,28,'#e9f3ec');
     s+=text(LEFT+8,134,'FAMILIA',8,true,'#31594a');
-    s+=text(LEFT+140,134,'CÓDIGO',8,true,'#31594a');
-    s+=text(LEFT+214,134,'PRODUCTO DESCRIPCIÓN',8,true,'#31594a');
-    s+=text(LEFT+624,134,'UNIDAD',8,true,'#31594a');
-    s+=text(LEFT+695,134,'TOTAL',8,true,'#31594a');
+    s+=text(LEFT+126,134,'CÓDIGO',8,true,'#31594a');
+    s+=text(LEFT+194,134,'PRODUCTO DESCRIPCIÓN',8,true,'#31594a');
+    s+=text(LEFT+537,134,'PIEZAS',8,true,'#31594a');
+    s+=text(LEFT+621,134,'UNIDAD',8,true,'#31594a');
+    s+=text(LEFT+692,134,'CANT. UNID.',8,true,'#31594a');
     return s;
   }
-  function footer(num,count){return line(LEFT,558,WIDTH-RIGHT,558) + text(LEFT,566,'Conteo registrado localmente · El inventario inicial no se incluye',7.5,false,'#829088') + text(WIDTH-RIGHT-95,566,`${num} / ${count}`,8,false,'#829088');}
+  function footer(num,count){return line(LEFT,558,WIDTH-RIGHT,558) + text(LEFT,566,'Sin conversión entre piezas y unidad de Excel · Inventario inicial excluido',7.5,false,'#829088') + text(WIDTH-RIGHT-95,566,`${num} / ${count}`,8,false,'#829088');}
   function makePages(products,info){
     const pages=[];
     let rows=[], y=162;
     for(const p of products){
-      const description=wrap(p.description,397,8.3,2);
-      const family=wrap(p.family,119,8,2);
+      const description=wrap(p.description,328,8.3,2);
+      const family=wrap(p.family,114,8,2);
       const height=Math.max(description.length,family.length)*11+14;
       if(y+height>BODY_BOTTOM && rows.length){pages.push(rows);rows=[];y=162;}
       rows.push({p,y,height,description,family});
@@ -79,11 +80,14 @@
         if(j%2===1) s+=rect(LEFT,r.y,WIDTH-LEFT-RIGHT,r.height,'#f7faf7');
         s+=line(LEFT,r.y+r.height,WIDTH-RIGHT,r.y+r.height,'#e8eee8');
         r.family.forEach((x,k)=>s+=text(LEFT+8,r.y+8+k*11,x,8,false,'#607168'));
-        s+=text(LEFT+140,r.y+8,fit(r.p.code,66,8.1),8.1,true,'#166d4e');
-        r.description.forEach((x,k)=>s+=text(LEFT+214,r.y+8+k*11,x,8.3,false,'#25392f'));
-        s+=text(LEFT+624,r.y+8,fit(r.p.unit,57,8.4),8.4,false,'#607168');
-        const amount=niceQty(r.p.totalMilli), amountX=WIDTH-RIGHT-9-textWidth(amount,9.4);
-        s+=text(amountX,r.y+7,amount,9.4,true,'#0b6545');
+        s+=text(LEFT+126,r.y+8,fit(r.p.code,62,8.1),8.1,true,'#166d4e');
+        r.description.forEach((x,k)=>s+=text(LEFT+194,r.y+8+k*11,x,8.3,false,'#25392f'));
+        const pieces=niceQty(r.p.totalsMilli?.piece || 0);
+        s+=text(LEFT+610-textWidth(pieces,9.4),r.y+7,pieces,9.4,true,'#0b6545');
+        s+=text(LEFT+621,r.y+8,fit(r.p.unit || '—',62,8.4),8.4,false,'#607168');
+        const other = Boolean(r.p.unit) && !/^(pza|pzas|pz|pieza|piezas|und|un|unidad|unidades)$/i.test(r.p.unit.trim());
+        const source=other?niceQty(r.p.totalsMilli?.source || 0):'—';
+        s+=text(WIDTH-RIGHT-9-textWidth(source,9.4),r.y+7,source,9.4,true,'#0b6545');
       }
       s+=footer(i+1,pages.length);
       return s;
