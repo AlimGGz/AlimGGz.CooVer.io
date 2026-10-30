@@ -1,28 +1,42 @@
-# ConteoVerde V5 · Importación XLS corregida
+# ConteoVerde V6 — Búsqueda auxiliar por SKU POS y SAP
 
-**Publicación simplificada:** GitHub Pages sólo necesita `index.html`. Este archivo es independiente y trae dentro los estilos, el lector de Excel `.xls`/`.xlsx`, el buscador, el conteo y la exportación a Excel y PDF. No usa scripts externos ni CDN. Se incluye la licencia de JSZip.
+La aplicación conserva todas las funciones de la V5 y añade un catálogo auxiliar de **equivalencias SKU POS ↔ Código SAP** extraídas de la *Lista de Precios Merch XMAS 2026_WK 45 C1.pdf*.
 
-## Para reemplazar la versión anterior
+## Cómo instalar en GitHub Pages
 
-1. Si hay un inventario en curso, exporta primero una copia de sus resultados como respaldo.
-2. En tu repositorio de GitHub, reemplaza el archivo `index.html` de la carpeta principal por el de este ZIP y confirma el cambio (commit). Los archivos anteriores `css/`, `js/` y `vendor/` se pueden dejar, pero la versión V5 ya no los carga.
-3. Si aún no tienes GitHub Pages habilitado: `Settings` → `Pages` → `Deploy from a branch` → rama `main` → carpeta `/(root)`.
-4. Abre tu sitio publicado y verifica que debajo del título aparezca **“V5 · LECTOR XLS INTEGRADO”**. Si no aparece, actualiza sin caché con **Ctrl+Shift+R** (en móviles, vuelve a abrir la página).
-5. Pulsa “Cambiar Excel” o carga un archivo en la pantalla inicial y selecciona **`ReporteInventario_NP2893.xls`**. El lector identifica el formato binario y debe mostrar **285 productos**, hoja **Datos** y **345 registros duplicados omitidos**.
-6. Si aparece una falla, ahora tendrás un **mensaje de error persistente** en la página; úsalo para reportar exactamente qué ocurre.
+1. Si tienes un inventario sin terminar, descarga primero un reporte como respaldo.
+2. Sustituye **sólo `index.html`** en la raíz de tu repositorio de GitHub (conserva `.nojekyll` si ya existe).
+3. Haz *Commit changes*; en GitHub Pages utiliza la rama `main`, directorio `/(root)`.
+4. Abre tu sitio y recarga con **Ctrl+Shift+R**. Debe decir «V6 · BÚSQUEDA SKU POS».
+5. Sube tu Excel de inventario como de costumbre (`.xls` o `.xlsx`) y busca por descripción, SAP o SKU POS.
 
-## Características
+La lista auxiliar **no aparece** en pantalla, no añade productos inexistentes al Excel ni se incorpora a los reportes. Los conteos siguen guardándose localmente. No se incluye el PDF de precios, las imágenes ni los importes.
 
-- Lee `.xls` de Excel 97–2003, `.xlsx` y algunos reportes Excel con formato HTML o XML de 2003 aunque usen extensión `.xls`.
-- Detecta por el contenido real del archivo si es XLS clásico o ZIP/XLSX. Importa sin enviar el documento a internet.
-- Detecta el catálogo mediante `Familia`, `Producto Descripción` o `Cod. Producto` (SAP), `Producto` y `Ud` (unidad). Deduplica por SAP.
-- Mantiene piezas por defecto; permite la unidad alternativa cuando corresponde; suma, resta con botón rojo, deshace y mantiene el historial.
-- Exporta PDF o XLSX con columnas `Piezas`, `Cant. Unid`, `Unidad`, en ese orden y centradas.
-- Guarda localmente y trata de preservar inventarios en curso de versiones anteriores **en el mismo navegador y mismo dominio**. Cambiar de catálogo reemplaza los conteos actuales sólo tras tu confirmación.
-- No incluye los datos de inventario personales precargados ni usa servidores.
+**Importante:** cuando varios SKU POS comparten el mismo SAP, la búsqueda muestra las coincidencias posibles del Excel, y la persona que cuenta debe comprobar la descripción. No se realiza una correspondencia automática infalible. Al presionar Enter, si hay varios resultados, se solicita elegir uno manualmente.
 
-## Solución alternativa
+## Actualizar el catálogo auxiliar cada viernes
 
-Si el navegador o el origen exporta un `.xls` incompatible, se puede importar el catálogo convertido a `.xlsx` (siempre que tenga SAP, producto y unidad), pero la V5 está preparada para leer directamente el `.xls` entregado.
+**Opción A (más simple):** envía el nuevo PDF semanal al chat y solicita «actualiza las equivalencias SKU POS de ConteoVerde».
 
-**Consejo:** Los conteos se guardan en este navegador. No borres los datos locales mientras realizas un inventario y descarga un respaldo antes de cambiar el archivo fuente.
+**Opción B (sin depender del chat):** utiliza el paquete independiente **Actualizador Semanal Merch** en tu computadora. Incluye un script y un archivo `.bat` para Windows.
+
+1. Instala Python 3 y la librería `pymupdf` (una sola vez): `py -3 -m pip install pymupdf`.
+2. Copia `actualizar_lista_merch.py` y `Actualizar_Merch_Windows.bat` a la misma carpeta donde tengas **`index.html`**.
+3. Arrastra el PDF semanal sobre `Actualizar_Merch_Windows.bat` (o ejecuta `py -3 actualizar_lista_merch.py "Nuevo Merch.pdf"`).
+4. El script reemplaza las equivalencias dentro de `index.html`; publica **sólo el nuevo `index.html`** en GitHub.
+5. No publiques el PDF original, el script, ni una carpeta con archivos internos del negocio.
+
+Si el PDF semanal cambia de diseño, la extracción debe revisarse antes de actualizar (la herramienta se detiene si no encuentra suficientes códigos).
+
+## Advertencia de confidencialidad
+
+**GitHub Pages es público.** Aunque la lista auxiliar no aparezca visualmente, las equivalencias numéricas incluidas en `index.html` **pueden ser examinadas por alguien que vea el código fuente**. Este esquema sirve para ocultarla de la interfaz, **no para proteger información realmente confidencial**. Para que los códigos sean inaccesibles a los visitantes hace falta consultar un servicio privado con autenticación (backend), en lugar de incrustarlos en una página pública.
+
+La fuente compartida indica que es información confidencial y prohíbe su distribución. Confirma la autorización de tu empresa antes de publicar esta versión. Si no tienes esa autorización, no la subas a un repositorio público; sería necesario un diseño con servidor privado.
+
+## Pruebas efectuadas
+
+- Se extrajeron **341 pares válidos** SKU POS / SAP del PDF (330 SAP distintos y 335 SKU POS distintos). Se ignoraron registros sin SKU POS numérico.
+- Probado con el archivo **`ReporteInventario_NP2893.xls`**: 285 productos, incluidos resultados por SKU POS.
+- Probado con **`lista.xlsx`**: 262 productos, suma, resta y descarga XLSX/PDF.
+- Las equivalencias sólo se usan en la búsqueda; no alteran los conteos, ni la importación, ni los reportes.

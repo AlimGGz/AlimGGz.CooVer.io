@@ -36,6 +36,9 @@
 .history-entry strong.negative,.recent-qty.negative{color:#b5363d}
 @media(max-width:370px){.amount-actions{gap:7px}.amount-actions .button{padding:12px 8px;font-size:12px}}
 
+/* V6: la lista de equivalencias no es una vista ni agrega productos al Excel cargado. */
+.sku-search-hint{margin:-3px 24px 12px;padding:10px 12px;border:1px solid #dbe9de;background:#eff8f0;border-radius:8px;color:#3a7056;font-size:11px;line-height:1.5}
+@media(max-width:650px){.sku-search-hint{margin-left:17px;margin-right:17px}}
 /* V5: retroalimentación de importación y sello de versión */
 .version-tag{display:inline-block;margin-left:9px;color:#0a7251;background:#e0f5e8;border-radius:99px;letter-spacing:.4px;font-size:10px;padding:5px 10px;font-weight:800;vertical-align:middle}
 .import-message{margin:-8px 0 23px;padding:15px 18px;border-radius:10px;border:1px solid #d0e9d9;background:#eef8f2;color:#155b3d;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
@@ -62,7 +65,7 @@
     <main class="main-container">
       <section class="intro">
         <div>
-          <p class="eyebrow"><span class="eyebrow-line"></span> INVENTARIOS / CONTROL DE EXISTENCIAS <span class="version-tag">V5 · LECTOR XLS INTEGRADO</span></p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> INVENTARIOS / CONTROL DE EXISTENCIAS <span class="version-tag">V6 · BÚSQUEDA SKU POS</span></p>
           <h1>Tu inventario, <em>bajo control.</em></h1>
           <p class="intro-description">Cuenta en piezas por defecto o en la unidad indicada en el Excel y descarga el reporte final.</p>
         </div>
@@ -102,7 +105,8 @@
         <div class="work-grid">
           <section class="panel catalog-panel" aria-label="Catálogo de productos">
             <div class="panel-header"><div><p class="micro-label">PASO 02 · BUSCAR</p><h2>Catálogo de productos</h2></div><span class="count-badge" id="visible-count">0</span></div>
-            <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Buscar por descripción o SAP…" autocomplete="off" /><kbd>/</kbd></label>
+            <label class="search-box"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Buscar por descripción, SAP o SKU POS…" autocomplete="off" /><kbd>/</kbd></label>
+            <p class="sku-search-hint" id="sku-search-hint" hidden>Resultado relacionado por SKU POS. Verifica la descripción antes de registrar cantidades; algunos productos comparten SAP.</p>
             <div class="filter-row">
               <label class="sr-only" for="family-filter">Filtrar por familia</label><select id="family-filter"><option value="all">Todas las familias</option></select>
               <label class="sr-only" for="status-filter">Filtrar por estado</label><select id="status-filter"><option value="all">Todos</option><option value="counted">Contados</option><option value="pending">Pendientes</option></select>
@@ -115,7 +119,7 @@
           <section class="panel detail-panel" aria-label="Registro de cantidades">
             <div class="detail-top"><p class="micro-label">PASO 03 · CONTABILIZAR</p><span id="detail-status" class="status-pill">Sin conteo</span></div>
             <div class="detail-content" id="detail-content">
-              <div class="empty-detail"><div class="empty-detail-icon">▧</div><h2>Selecciona un producto</h2><p>Usa el buscador de la izquierda para comenzar a contar.</p></div>
+              <div class="empty-detail"><div class="empty-detail-icon">▧</div><h2>Selecciona un producto</h2><p>Busca por nombre, SAP o SKU POS para comenzar a contar.</p></div>
             </div>
           </section>
         </div>
@@ -672,6 +676,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 })(window);
 
 </script>
+  <!-- CV_MERCH_ALIASES_BEGIN -->
+<script id="cv-merch-aliases" type="application/json">{"actualizado":"2026-10-30","pares":[["149373","52334"],["149714","58834"],["149751","52304"],["149786","52374"],["149787","52343"],["149788","52345"],["149819","52307"],["149820","52321"],["149821","52323"],["149822","52317"],["149823","52329"],["149824","52347"],["149825","52376"],["149826","52312"],["149827","52320"],["149828","52325"],["149829","52348"],["149837","52350"],["149838","52310"],["149839","52311"],["149840","52309"],["149841","52332"],["149842","52330"],["149843","52331"],["149844","52306"],["149845","52351"],["149846","52382"],["149847","52319"],["149848","52314"],["149849","52315"],["149850","52318"],["149851","52352"],["149852","52368"],["149853","52400"],["149854","52346"],["149855","52378"],["149856","52384"],["149857","52326"],["149858","52308"],["149859","52380"],["149860","52313"],["149861","52398"],["149862","52354"],["149863","52328"],["149864","52369"],["149865","52316"],["149866","52357"],["149867","52359"],["149868","52361"],["149869","52363"],["149870","52365"],["149871","52367"],["149883","52413"],["149890","52442"],["149892","52370"],["149893","52371"],["149894","52373"],["149897","52444"],["149898","52433"],["149900","52418"],["149901","52419"],["149902","52426"],["149903","52414"],["149904","52451"],["149905","52432"],["149906","52416"],["149907","52417"],["149908","52445"],["149909","52448"],["149910","52425"],["149911","52436"],["149915","52483"],["149917","52434"],["149918","52421"],["149920","52446"],["149921","52428"],["149922","52422"],["149923","52427"],["149927","52423"],["149928","52431"],["149929","52440"],["149930","52489"],["149934","52441"],["149941","52443"],["149942","52424"],["149943","52450"],["149944","52453"],["149945","52435"],["149946","52430"],["149947","52429"],["149948","52437"],["149949","52415"],["149950","52420"],["149951","52452"],["149952","52447"],["149953","52408"],["149954","52407"],["149955","52409"],["149957","52345"],["149958","52355"],["149959","52403"],["149967","52336"],["149968","52402"],["149969","52388"],["149970","52386"],["149973","52557"],["149974","52559"],["149977","52505"],["149978","52566"],["149979","52513"],["149980","52541"],["149981","52503"],["149982","52539"],["149983","52501"],["149984","52507"],["149985","52449"],["149988","52562"],["149990","52563"],["149991","52504"],["149992","52510"],["149993","52534"],["149994","52536"],["149995","52537"],["149996","52564"],["149997","52521"],["149998","52519"],["149999","52544"],["150000","52542"],["150001","52517"],["150002","52531"],["150003","52496"],["150004","52532"],["150005","52502"],["150007","52498"],["150008","52561"],["150010","52511"],["150011","52538"],["150012","52508"],["150015","52390"],["150016","52392"],["150017","52394"],["150021","52438"],["150023","52556"],["150024","52554"],["150033","58769"],["150033","58775"],["150034","58771"],["150034","58773"],["150037","52584"],["150038","52593"],["150039","52603"],["150040","52589"],["150041","52602"],["150042","52579"],["150043","52600"],["150044","52580"],["150045","52586"],["150046","52591"],["150047","52585"],["150048","52596"],["150049","52578"],["150050","52581"],["150051","52601"],["150052","52595"],["150053","52604"],["150054","52598"],["150055","52587"],["150056","52597"],["150060","52582"],["150061","52588"],["150161","52322"],["150162","52324"],["150163","52327"],["152528","52525"],["152529","52527"],["152530","52529"],["152531","52523"],["152542","58958"],["152544","58785"],["152545","52575"],["152546","52577"],["152547","50747"],["152548","58761"],["152550","52546"],["152550","52548"],["152550","52550"],["152550","52552"],["152551","52567"],["152551","52568"],["152551","52569"],["152588","52608"],["152589","52609"],["152590","52610"],["152591","52612"],["152592","58779"],["152593","58767"],["152594","58791"],["152595","58792"],["152596","58793"],["152597","58794"],["152598","58781"],["152599","58765"],["152600","58783"],["152601","58796"],["152602","58763"],["152603","58797"],["152604","58798"],["152605","58799"],["152606","58800"],["152607","58801"],["152965","58861"],["152966","58863"],["152967","50743"],["152968","50740"],["152969","58757"],["152971","52617"],["152972","52616"],["152973","52615"],["152975","52606"],["154120","50746"],["154121","58865"],["154122","50742"],["154123","58753"],["154124","58755"],["154125","50745"],["154126","58862"],["154127","50741"],["154141","58828"],["154142","58804"],["154143","58777"],["154144","58805"],["154145","58831"],["154146","58817"],["154147","50736"],["154148","58824"],["154149","58807"],["154150","50737"],["154151","58812"],["154153","58864"],["154157","58803"],["154158","58816"],["154159","58810"],["154160","58813"],["154161","50739"],["154161","50759"],["154162","58819"],["154163","58830"],["154164","58806"],["154165","58818"],["154166","58825"],["154167","58823"],["154168","58848"],["154169","58826"],["154170","58827"],["154171","58829"],["154172","58822"],["154174","58795"],["154175","58821"],["154176","50735"],["154177","58809"],["154178","58802"],["154179","58820"],["154180","50738"],["154181","58808"],["154182","58811"],["154183","58832"],["154184","58835"],["154185","58815"],["155921","52614"],["155959","58840"],["155959","58842"],["155960","58838"],["155961","58839"],["155967","58853"],["155968","58890"],["155969","58846"],["155969","58891"],["155970","58892"],["155971","58906"],["155974","58751"],["155975","58836"],["155977","58885"],["156335","58866"],["156337","58898"],["156338","50757"],["156339","58867"],["156340","58910"],["156341","58908"],["156342","58896"],["156343","58899"],["156344","50755"],["156345","58854"],["156346","50751"],["156347","50753"],["156348","50754"],["156349","58855"],["156350","50756"],["156351","50758"],["156352","58905"],["156353","58895"],["156354","58904"],["156355","58852"],["156356","58901"],["156357","58909"],["156358","58900"],["159930","58858"],["159931","58859"],["159932","58868"],["159933","58894"],["159934","58907"],["159935","58893"],["159936","58897"],["159937","58857"],["159943","50749"],["159944","50749"],["159945","50749"],["159946","50749"],["159947","50749"],["159948","50749"],["161734","58814"],["161819","58887"],["161934","58878"],["161935","58876"],["161936","58870"],["161937","58888"],["161938","58882"],["161939","58874"],["161940","58880"],["162065","58913"],["162249","58884"],["162250","58872"],["162251","58902"],["162262","58916"],["162531","58923"],["162531","58924"],["162532","58926"],["162549","58927"],["162550","58920"],["162551","58928"],["162556","58925"],["163939","58914"]]}</script>
+<!-- CV_MERCH_ALIASES_END -->
   <script>
 (function () {
   'use strict';
@@ -681,6 +688,25 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   const quantity = milli => fmt(milli / 1000);
   const safe = text => String(text ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const normalize = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-MX');
+  // Catálogo auxiliar para búsqueda, independiente de los productos y del conteo.
+  // Sólo contiene pares de identificadores (SAP, SKU POS), nunca precios, PDF ni inventario.
+  const merchandising = (() => {
+    const bySAP = new Map();
+    try {
+      const data = JSON.parse($('cv-merch-aliases')?.textContent || '{}');
+      for (const pair of data.pares || []) {
+        if (!Array.isArray(pair) || pair.length !== 2) continue;
+        const [sap, skuPos] = pair.map(String);
+        if (!/^\d{6}$/.test(sap) || !/^\d{4,7}$/.test(skuPos)) continue;
+        if (!bySAP.has(sap)) bySAP.set(sap, new Set());
+        bySAP.get(sap).add(skuPos);
+      }
+    } catch (error) { console.warn('Equivalencias SKU POS no disponibles', error); }
+    return bySAP;
+  })();
+  const skuSearch = (product, text) => /^\d{3,7}$/.test(text) &&
+    Array.from(merchandising.get(String(product.code).trim()) || []).some(sku => sku.includes(text));
+
   const dateShort = iso => new Date(iso).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   let state = null, selectedId = null, toastTimer = null, isImporting = false;
   let selectedUnitKey = 'piece'; // Siempre iniciar el registro de cada artículo en piezas.
@@ -753,7 +779,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (family !== 'all' && p.family !== family) return false;
       if (status === 'counted' && !hasCount(p)) return false;
       if (status === 'pending' && hasCount(p)) return false;
-      return !text || normalize(`${p.description} ${p.family} ${p.code}`).includes(text);
+      return !text || normalize(`${p.description} ${p.family} ${p.code}`).includes(text) || skuSearch(p, text);
     });
   }
   function renderStats() {
@@ -769,6 +795,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
   function renderList() {
     const matches = getFiltered();
+    const query = normalize($('search-input').value.trim());
+    const viaSku = /^\d{3,7}$/.test(query) && matches.some(p => skuSearch(p, query) && !normalize(`${p.description} ${p.family} ${p.code}`).includes(query));
+    $('sku-search-hint').hidden = !viaSku;
     $('visible-count').textContent = fmt(matches.length);
     $('list-range').textContent = `${matches.length} de ${state.products.length}`;
     const fragment = document.createDocumentFragment();
@@ -969,7 +998,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     for (const event of ['dragleave','drop']) $('drop-zone').addEventListener(event, e => { e.preventDefault(); $('drop-zone').classList.remove('drag-over'); });
     $('drop-zone').addEventListener('drop', e => importFile(e.dataTransfer?.files?.[0]));
     $('search-input').addEventListener('input', renderList);
-    $('search-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){const first=getFiltered()[0];if(first){selectedId=first.id;selectedUnitKey='piece';state.selectedId=selectedId;save();renderList();renderDetail();$('amount-input')?.focus();}} });
+    $('search-input').addEventListener('keydown',e=>{ if(e.key==='Enter'){const found=getFiltered();if(found.length===1){selectedId=found[0].id;selectedUnitKey='piece';state.selectedId=selectedId;save();renderList();renderDetail();$('amount-input')?.focus();}else if(found.length>1){toast('Hay varios productos coincidentes. Selecciona el correcto en la lista.');}} });
     $('family-filter').addEventListener('change', renderList);
     $('status-filter').addEventListener('change', renderList);
     $('finalize-btn').addEventListener('click', openExport);
